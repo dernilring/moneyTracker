@@ -1,13 +1,16 @@
 package com.example.moneytracker
 
+import android.R.attr.text
 import android.os.Bundle
 import android.widget.Toast
+import androidx.compose.runtime.setValue
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import com.example.moneytracker.ui.theme.MoneyTrackerTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.currentCompositionErrors
 import androidx.compose.ui.Alignment
@@ -36,8 +41,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.lazy.items
-
-
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 
 
 class MainActivity : ComponentActivity() {
@@ -47,6 +54,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MoneyTrackerTheme {
                 val context = LocalContext.current
+                var selectedId by remember { mutableStateOf<String?>(null) }
                 val viewModel: MoneyViewModel = viewModel()
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -61,6 +69,7 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                         Spendings(
                             spendings = viewModel.spendings,
+                            selectedId = selectedId,
                             modifier = Modifier.padding(innerPadding),
                             onItemClick = { currSp ->
                                 Toast.makeText(
@@ -70,8 +79,8 @@ class MainActivity : ComponentActivity() {
                                 ).show()
 
                             },
-                            onLongItemClick = { spendingToRemove ->
-                                viewModel.removeFromList(spendingToRemove)
+                            onLongItemClick = { spending ->
+                                selectedId = if (selectedId == spending.id) null else spending.id
                             }
                         )
                 }
@@ -84,6 +93,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Spendings(spendings: List<Spending>,
+              selectedId: String?,
               modifier: Modifier = Modifier,
               onItemClick: (Spending) -> Unit,
               onLongItemClick: (Spending) -> Unit,
@@ -94,14 +104,20 @@ fun Spendings(spendings: List<Spending>,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ){
         items(spendings, key = {it.id}){ currSpending ->
+            val showInfo = selectedId == currSpending.id
+            val blurModifier = if (selectedId!= null && !showInfo){
+                Modifier.blur(10.dp)
+
+            } else {
+                Modifier
+            }
             SpendingCard(
                 spending = currSpending,
+                showInfo = showInfo,
+                modifier = blurModifier,
                 onItemClick =onItemClick,
                 onLongItemClick = onLongItemClick
             )
-
-
-
         }
     }
 }
@@ -109,33 +125,49 @@ fun Spendings(spendings: List<Spending>,
 @Composable
 fun SpendingCard(
         spending: Spending,
+        showInfo: Boolean = false,
+        modifier: Modifier,
         onItemClick: (Spending) -> Unit,
         onLongItemClick: (Spending) -> Unit
 ){
     Card(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn( min = if (showInfo) 140.dp else 72.dp)
             .combinedClickable(
                 onClick ={ onItemClick(spending)},
                 onLongClick = { onLongItemClick(spending)}
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = if (showInfo)
+                 10.dp else 4.dp)
 
     ){
         Row(
             modifier = Modifier
              .fillMaxWidth()
              .background(Color.LightGray)
-             .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+             .padding( if (showInfo) 24.dp else 16.dp),
+            verticalAlignment = Alignment.Top
         ){
-            Text(
-                text = spending.title
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-               text = "${spending.amount} $"
-            )
+            Column(modifier = Modifier.weight(1f)){
+                Text(
+                    text = spending.title,
+                    fontSize = if (showInfo) 24.sp else 18.sp
+                )
+                Text(
+                    text = "${spending.amount} $",
+                    fontSize = 18.sp,
+                    color = Color.Red
+                )
+                if (showInfo){
+                     spending.note?.let{
+                         Text(it, fontSize = 15.sp)
+                     }
+                    Text(text = spending.date, fontSize = 15.sp)
+                    Text(text = spending.category, fontSize = 15.sp)
+                }
+            }
+
         }
     }
 }
@@ -155,6 +187,7 @@ fun GreetingPreview() {
         )
         Spendings(
             spendings = sample,
+            selectedId = null,
             onItemClick = {},
             onLongItemClick = {}
         )
