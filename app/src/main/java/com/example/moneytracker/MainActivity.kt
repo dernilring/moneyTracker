@@ -1,5 +1,6 @@
 package com.example.moneytracker
 
+import android.R.attr.category
 import android.R.attr.contentDescription
 import android.R.attr.text
 import android.os.Bundle
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.currentCompositionErrors
 import androidx.compose.ui.Alignment
@@ -58,6 +60,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.moneytracker.screens.Account
+import com.example.moneytracker.screens.Analitics
+import com.example.moneytracker.screens.Categories
+import com.example.moneytracker.screens.Home
+import com.example.moneytracker.screens.SpendingHistory
 
 
 class MainActivity : ComponentActivity() {
@@ -75,16 +82,22 @@ class MainActivity : ComponentActivity() {
 }
 @Composable
 fun Main() {
-val navController = rememberNavController()
+    var selectedId by remember { mutableStateOf<String?>(null) }
+    val viewModel: MoneyViewModel = viewModel()
+    val navController = rememberNavController()
     Column(
-        Modifier.padding(10.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
         NavHost(navController, startDestination = NavRoutes.Home.route, modifier = Modifier.weight(1f)){
             composable(NavRoutes.Home.route) {Home()}
             composable(NavRoutes.Account.route) {Account()}
             composable(NavRoutes.Analitics.route) {Analitics()}
             composable(NavRoutes.Categories.route) {Categories()}
-            composable(NavRoutes.SpendingHistory.route) {SpendingHistory()}
+            composable(NavRoutes.SpendingHistory.route) {SpendingHistory(viewModel =  viewModel,
+                selectedId =  selectedId,
+                onLongItemClick = { spending ->
+                    selectedId = if (selectedId == spending.id) null else spending.id
+            })}
         }
         BottomNavBar(navController = navController)
     }
@@ -118,59 +131,6 @@ fun BottomNavBar(navController: NavController) {
         }
     }
 }
-@Composable
-fun Home(){
-    Text(text = "home")
-}
-@Composable
-fun Account(){
-    Text(text = "acc")
-}
-@Composable
-fun Analitics(){
-    Text(text = "analitics")
-}
-@Composable
-fun Categories(){
-Text(text = "categories")
-}
-@Composable
-fun SpendingHistory(){
-    val context = LocalContext.current
-    var selectedId by remember { mutableStateOf<String?>(null) }
-    val viewModel: MoneyViewModel = viewModel()
-
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            floatingActionButton = {
-                FloatingActionButton(
-                    shape = CircleShape,
-                    onClick = { viewModel.addToList() }
-                ){
-                    Text(text= "+", fontSize = 24.sp)
-                }
-            }
-        ) { innerPadding ->
-            Spendings(
-                spendings = viewModel.spendings,
-                selectedId = selectedId,
-                modifier = Modifier.padding(innerPadding),
-                onItemClick = { currSp ->
-                    Toast.makeText(
-                        context,
-                        "${currSp.title} — ${currSp.amount}",
-                        Toast.LENGTH_LONG
-                    ).show()
-
-                },
-                onLongItemClick = { spending ->
-                    selectedId = if (selectedId == spending.id) null else spending.id
-                }
-            )
-        }
-    }
-
-
 
 @Composable
 fun Spendings(spendings: List<Spending>,
@@ -233,7 +193,8 @@ fun SpendingCard(
             Column(modifier = Modifier.weight(1f)){
                 Text(
                     text = spending.title,
-                    fontSize = if (showInfo) 24.sp else 18.sp
+                    fontSize = if (showInfo) 24.sp else 18.sp,
+                    color = Color.Black
                 )
                 Text(
                     text = "${spending.amount} $",
@@ -242,10 +203,10 @@ fun SpendingCard(
                 )
                 if (showInfo){
                      spending.note?.let{
-                         Text(it, fontSize = 15.sp)
+                         Text(it, fontSize = 15.sp,  color = Color.Black)
                      }
-                    Text(text = spending.date, fontSize = 15.sp)
-                    Text(text = spending.category, fontSize = 15.sp)
+                    Text(text = spending.date, fontSize = 15.sp,  color = Color.Black)
+                    Text(text = spending.category.toString(), fontSize = 15.sp,  color = Color.Black)
                 }
             }
 
@@ -256,15 +217,14 @@ fun SpendingCard(
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-
     MoneyTrackerTheme {
         val sample = listOf<Spending>(
-            Spending(category = "food", title = "Сыр", amount = 4.08, date = "02-11-2026", note = null),
-            Spending(category = "food", title = "Хлеб", amount = 1.25, date = "02-11-2026", note = "бородинский"),
-            Spending(category = "food", title = "Сыр", amount = 4.08, date = "01-11-2026", note = null),
-            Spending(category = "food", title = "Яблоки", amount = 2.70, date = "01-11-2026", note = "1 кг"),
-            Spending(category = "food", title = "Сыр", amount = 4.08, date = "30-10-2026", note = null),
-            Spending(category = "food", title = "Батон", amount = 0.95, date = "30-10-2026", note = null)
+            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = "02-11-2026", note = null),
+            Spending(category = Category.FOOD, title = "Хлеб", amount = 1.25, date = "02-11-2026", note = "бородинский"),
+            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = "01-11-2026", note = null),
+            Spending(category = Category.FOOD, title = "Яблоки", amount = 2.70, date = "01-11-2026", note = "1 кг"),
+            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = "30-10-2026", note = null),
+            Spending(category = Category.FOOD, title = "Батон", amount = 0.95, date = "30-10-2026", note = null)
         )
         Spendings(
             spendings = sample,
