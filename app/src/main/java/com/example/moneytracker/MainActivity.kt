@@ -1,5 +1,6 @@
 package com.example.moneytracker
 
+import android.R.attr.contentDescription
 import android.R.attr.text
 import android.os.Bundle
 import android.widget.Toast
@@ -41,10 +42,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 
 
 class MainActivity : ComponentActivity() {
@@ -53,43 +66,111 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MoneyTrackerTheme {
-                val context = LocalContext.current
-                var selectedId by remember { mutableStateOf<String?>(null) }
-                val viewModel: MoneyViewModel = viewModel()
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    floatingActionButton = {
-                        FloatingActionButton(
-                            shape = CircleShape,
-                            onClick = { viewModel.addToList() }
-                        ){
-                            Text(text= "+", fontSize = 24.sp)
-                        }
-                    }
-                ) { innerPadding ->
-                        Spendings(
-                            spendings = viewModel.spendings,
-                            selectedId = selectedId,
-                            modifier = Modifier.padding(innerPadding),
-                            onItemClick = { currSp ->
-                                Toast.makeText(
-                                    context,
-                                    "${currSp.title} — ${currSp.amount}",
-                                    Toast.LENGTH_LONG
-                                ).show()
-
-                            },
-                            onLongItemClick = { spending ->
-                                selectedId = if (selectedId == spending.id) null else spending.id
-                            }
-                        )
-                }
+                Main()
             }
         }
     }
 
 
 }
+@Composable
+fun Main() {
+val navController = rememberNavController()
+    Column(
+        Modifier.padding(10.dp)
+    ) {
+        NavHost(navController, startDestination = NavRoutes.Home.route, modifier = Modifier.weight(1f)){
+            composable(NavRoutes.Home.route) {Home()}
+            composable(NavRoutes.Account.route) {Account()}
+            composable(NavRoutes.Analitics.route) {Analitics()}
+            composable(NavRoutes.Categories.route) {Categories()}
+            composable(NavRoutes.SpendingHistory.route) {SpendingHistory()}
+        }
+        BottomNavBar(navController = navController)
+    }
+}
+@Composable
+fun BottomNavBar(navController: NavController) {
+    NavigationBar{
+        val backStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = backStackEntry?.destination?.route
+
+        NavBarItems.BarItems.forEach { navItem->
+            NavigationBarItem(
+                selected = currentRoute == navItem.route,
+                onClick = {
+                        navController.navigate(navItem.route){
+                            popUpTo(navController.graph.findStartDestination().id) {saveState = true}
+                             launchSingleTop = true
+                              restoreState = true
+                        }
+                },
+                icon ={
+                    Icon(
+                        imageVector = ImageVector.vectorResource(navItem.image),
+                        contentDescription = navItem.title
+                    )
+                },
+                label ={
+                    Text(text = navItem.title)
+                }
+            )
+        }
+    }
+}
+@Composable
+fun Home(){
+    Text(text = "home")
+}
+@Composable
+fun Account(){
+    Text(text = "acc")
+}
+@Composable
+fun Analitics(){
+    Text(text = "analitics")
+}
+@Composable
+fun Categories(){
+Text(text = "categories")
+}
+@Composable
+fun SpendingHistory(){
+    val context = LocalContext.current
+    var selectedId by remember { mutableStateOf<String?>(null) }
+    val viewModel: MoneyViewModel = viewModel()
+
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            floatingActionButton = {
+                FloatingActionButton(
+                    shape = CircleShape,
+                    onClick = { viewModel.addToList() }
+                ){
+                    Text(text= "+", fontSize = 24.sp)
+                }
+            }
+        ) { innerPadding ->
+            Spendings(
+                spendings = viewModel.spendings,
+                selectedId = selectedId,
+                modifier = Modifier.padding(innerPadding),
+                onItemClick = { currSp ->
+                    Toast.makeText(
+                        context,
+                        "${currSp.title} — ${currSp.amount}",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                },
+                onLongItemClick = { spending ->
+                    selectedId = if (selectedId == spending.id) null else spending.id
+                }
+            )
+        }
+    }
+
+
 
 @Composable
 fun Spendings(spendings: List<Spending>,
