@@ -7,7 +7,7 @@ data class Spending(
     val category: Category,
     val title: String,
     val amount: Double,
-    val date: String,
+    val date: Long,
     val note: String?
 )
 

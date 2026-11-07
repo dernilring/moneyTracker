@@ -61,10 +61,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.moneytracker.screens.Account
+import com.example.moneytracker.screens.AddSpending
 import com.example.moneytracker.screens.Analitics
 import com.example.moneytracker.screens.Categories
 import com.example.moneytracker.screens.Home
 import com.example.moneytracker.screens.SpendingHistory
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 class MainActivity : ComponentActivity() {
@@ -91,13 +95,25 @@ fun Main() {
         NavHost(navController, startDestination = NavRoutes.Home.route, modifier = Modifier.weight(1f)){
             composable(NavRoutes.Home.route) {Home()}
             composable(NavRoutes.Account.route) {Account()}
-            composable(NavRoutes.Analitics.route) {Analitics()}
+            composable(NavRoutes.Analitics.route) {Analitics(viewModel = viewModel)}
             composable(NavRoutes.Categories.route) {Categories()}
             composable(NavRoutes.SpendingHistory.route) {SpendingHistory(viewModel =  viewModel,
                 selectedId =  selectedId,
                 onLongItemClick = { spending ->
-                    selectedId = if (selectedId == spending.id) null else spending.id
-            })}
+                    selectedId = if (selectedId == spending.id) null else spending.id },
+                onAddClick = {
+                    navController.navigate(NavRoutes.AddSpending.route)
+                }
+            )}
+            composable(NavRoutes.AddSpending.route) {
+                AddSpending(
+                    onSave = { spending ->
+                        viewModel.addSpending(spending)
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
         BottomNavBar(navController = navController)
     }
@@ -205,7 +221,11 @@ fun SpendingCard(
                      spending.note?.let{
                          Text(it, fontSize = 15.sp,  color = Color.Black)
                      }
-                    Text(text = spending.date, fontSize = 15.sp,  color = Color.Black)
+                    Text(
+                        text = SimpleDateFormat("dd-MM-yyyy", Locale.US)
+                            .format(Date(spending.date)),
+                        fontSize = 15.sp
+                    )
                     Text(text = spending.category.toString(), fontSize = 15.sp,  color = Color.Black)
                 }
             }
@@ -219,12 +239,12 @@ fun SpendingCard(
 fun GreetingPreview() {
     MoneyTrackerTheme {
         val sample = listOf<Spending>(
-            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = "02-11-2026", note = null),
-            Spending(category = Category.FOOD, title = "Хлеб", amount = 1.25, date = "02-11-2026", note = "бородинский"),
-            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = "01-11-2026", note = null),
-            Spending(category = Category.FOOD, title = "Яблоки", amount = 2.70, date = "01-11-2026", note = "1 кг"),
-            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = "30-10-2026", note = null),
-            Spending(category = Category.FOOD, title = "Батон", amount = 0.95, date = "30-10-2026", note = null)
+            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = System.currentTimeMillis(), note = null),
+            Spending(category = Category.FOOD, title = "Хлеб", amount = 1.25, date = System.currentTimeMillis(), note = "бородинский"),
+            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = System.currentTimeMillis(), note = null),
+            Spending(category = Category.FOOD, title = "Яблоки", amount = 2.70, date = System.currentTimeMillis(), note = "1 кг"),
+            Spending(category = Category.FOOD, title = "Сыр", amount = 4.08, date = System.currentTimeMillis(), note = null),
+            Spending(category = Category.FOOD, title = "Батон", amount = 0.95, date = System.currentTimeMillis(), note = null)
         )
         Spendings(
             spendings = sample,

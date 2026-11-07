@@ -24,8 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 import com.example.moneytracker.Category
 import com.example.moneytracker.MoneyViewModel
+import com.example.moneytracker.NavRoutes
 import com.example.moneytracker.Sorting
 import com.example.moneytracker.Spending
 import com.example.moneytracker.Spendings
@@ -35,13 +38,15 @@ import com.example.moneytracker.sortedBySum
 fun SpendingHistory(
     viewModel: MoneyViewModel,
     selectedId: String?,
-    onLongItemClick: (Spending) -> Unit
+    onLongItemClick: (Spending) -> Unit,
+    onAddClick: () ->Unit,
 ) {
     val context = LocalContext.current
     var categoryMenuExpanded by remember { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
-    var sorting by remember { mutableStateOf<Sorting?>(null) }   // null = без сортировки
+    var sorting by remember { mutableStateOf<Sorting?>(null) }
+
 
     val visibleSpendings = viewModel.spendings
         .filter { selectedCategory == null || it.category == selectedCategory }
@@ -52,7 +57,7 @@ fun SpendingHistory(
         floatingActionButton = {
             FloatingActionButton(
                 shape = CircleShape,
-                onClick = { viewModel.addToList() }
+                onClick = onAddClick
             ) {
                 Text(text = "+", fontSize = 24.sp)
             }
@@ -69,7 +74,6 @@ fun SpendingHistory(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Фильтр категории
                 Box {
                     FilterChip(
                         selected = selectedCategory != null,
@@ -101,7 +105,6 @@ fun SpendingHistory(
                     }
                 }
 
-                // Сортировка
                 Box {
                     FilterChip(
                         selected = sorting != null,
