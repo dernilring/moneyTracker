@@ -2,12 +2,20 @@ package com.example.moneytracker
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.moneytracker.data.SpendingDao
+import com.example.moneytracker.data.toEntity
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlin.text.category
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.collections.emptyList
 
 
-class MoneyViewModel : ViewModel() {
+class MoneyViewModel(private val dao: SpendingDao): ViewModel() {
     private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.US)
     val spendings = mutableStateListOf<Spending>(
         // === 02-11-2026 ===
@@ -56,12 +64,23 @@ class MoneyViewModel : ViewModel() {
         Spending(category = Category.HOME, title = "Салфетки", amount = 1.80, date = date(28, 10, 2026), note = null),
         Spending(category = Category.TRANSPORT, title = "Автобус", amount = 0.75, date = date(28, 10, 2026), note = null)
     )
+
+    val spendingsFromDB = dao.getAllSpendings().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+
     fun date(day: Int, month: Int, year:Int) : Long{
         val formatted ="%02d-%02d-%04d".format(day, month, year)
         return dateFormat.parse(formatted)!!.time
     }
     fun addSpending(spending: Spending) {
         spendings.add(spending)
+        viewModelScope.launch{
+            dao.insertSpending(spending.toEntity())
+        }
     }
     val totalSum: Double
         get() =  spendings.sumOf { it.amount }
@@ -72,6 +91,9 @@ class MoneyViewModel : ViewModel() {
 
     fun removeFromList(spending: Spending) {
         spendings.removeAll { it.id == spending.id }
+        viewModelScope.launch {
+            dao.deleteSpendingById(spending.id)
+        }
     }
 
     fun changeItem(spending: Spending, newSpending: Spending) {

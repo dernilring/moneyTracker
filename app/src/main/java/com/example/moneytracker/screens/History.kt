@@ -16,6 +16,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +33,10 @@ import com.example.moneytracker.NavRoutes
 import com.example.moneytracker.Sorting
 import com.example.moneytracker.Spending
 import com.example.moneytracker.Spendings
+import com.example.moneytracker.data.toModel
 import com.example.moneytracker.sortedBySum
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun SpendingHistory(
@@ -47,8 +51,11 @@ fun SpendingHistory(
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var sorting by remember { mutableStateOf<Sorting?>(null) }
 
+    val spendingsFromDB by viewModel.spendingsFromDB.collectAsState()
 
-    val visibleSpendings = viewModel.spendings
+
+    val visibleSpendings = spendingsFromDB
+        .map{   it.toModel()}
         .filter { selectedCategory == null || it.category == selectedCategory }
         .let { list -> sorting?.let { list.sortedBySum(it) } ?: list }
 
@@ -154,7 +161,3 @@ fun SpendingHistory(
     }
 }
 
-private fun List<Spending>.sortedBySum(order: Sorting): List<Spending> = when (order) {
-    Sorting.ASCENDING -> sortedBy { it.amount }
-    Sorting.DECREASING -> sortedByDescending { it.amount }
-}

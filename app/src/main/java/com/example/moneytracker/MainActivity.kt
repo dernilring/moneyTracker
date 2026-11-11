@@ -54,12 +54,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.moneytracker.data.AppDatabase
 import com.example.moneytracker.screens.Account
 import com.example.moneytracker.screens.AddSpending
 import com.example.moneytracker.screens.Analitics
@@ -87,7 +90,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Main() {
     var selectedId by remember { mutableStateOf<String?>(null) }
-    val viewModel: MoneyViewModel = viewModel()
+    val context = LocalContext.current
+    val database = remember { AppDatabase.getDatabase(context) }
+    val viewModel: MoneyViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { MoneyViewModel(database.spendingDao()) }
+        }
+    )
     val navController = rememberNavController()
     Column(
         modifier = Modifier.fillMaxSize()
