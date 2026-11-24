@@ -76,7 +76,6 @@ fun AddSpending(
                 label = { Text("Сумма") }
             )
 
-            // Категория — кнопка + меню
             Box {
                 OutlinedButton(
                     onClick = { categoryExpanded = true },
